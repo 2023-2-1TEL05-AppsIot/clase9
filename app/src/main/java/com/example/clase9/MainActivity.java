@@ -7,15 +7,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import com.example.clase9.databinding.ActivityMainBinding;
 import com.example.clase9.dtos.Usuario;
+import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -66,29 +70,37 @@ public class MainActivity extends AppCompatActivity {
         });
 
         binding.btnListarUsuarios.setOnClickListener(view -> {
-            binding.btnListarUsuarios.setEnabled(false);
             String dni = binding.textFieldDni.getEditText().getText().toString();
 
-            db.collection("usuarios")
-                    .document(dni)
-                    .get()
-                    .addOnCompleteListener(task -> {
+            if (!dni.isEmpty()) {
+                binding.btnListarUsuarios.setEnabled(false);
+                db.collection("usuarios")
+                        .document(dni)
+                        .get()
+                        .addOnCompleteListener(task -> {
 
-                        if (task.isSuccessful()) {
-                            DocumentSnapshot documentSnapshot = task.getResult();
-                            if (documentSnapshot.exists()) {
-                                Log.d("msg-test", "DocumentSnapshot data: " + documentSnapshot.getData());
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot documentSnapshot = task.getResult();
+                                if (documentSnapshot.exists()) {
+                                    Log.d("msg-test", "DocumentSnapshot data: " + documentSnapshot.getData());
 
-                                Usuario usuario = documentSnapshot.toObject(Usuario.class);
-                                Toast.makeText(this, "Nombre: " + usuario.getNombre() + " | apellido: " + usuario.getApellido(), Toast.LENGTH_SHORT).show();
+                                    Usuario usuario = documentSnapshot.toObject(Usuario.class);
+                                    Toast.makeText(this, "Nombre: " + usuario.getNombre() + " | apellido: " + usuario.getApellido(), Toast.LENGTH_SHORT).show();
 
-                            } else {
-                                Toast.makeText(this, "El usuario no existe", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(this, "El usuario no existe", Toast.LENGTH_SHORT).show();
+                                }
                             }
-                        }
 
-                        binding.btnListarUsuarios.setEnabled(true);
-                    });
+                            binding.btnListarUsuarios.setEnabled(true);
+                        });
+            }
+
+            binding.floatingActionButton.setOnClickListener(view2 -> {
+                Intent intent = new Intent(MainActivity.this, MainActivity2.class);
+                startActivity(intent);
+            });
+
         });
 
         binding.btnTiempoReal.setOnClickListener(view -> {
@@ -110,11 +122,28 @@ public class MainActivity extends AppCompatActivity {
                     });
         });
 
+        binding.logoutBtn.setOnClickListener(view -> {
+            AuthUI.getInstance().signOut(MainActivity.this)
+                    .addOnCompleteListener(task -> {
+                        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                        startActivity(intent);
+                        finish();
+                    });
+        });
+
+        binding.floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this, MainActivity2.class));
+            }
+        });
+
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        snapshotListener.remove();
+        if (snapshotListener != null)
+            snapshotListener.remove();
     }
 }
